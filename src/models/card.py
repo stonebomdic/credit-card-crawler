@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from typing import Dict, List, Optional, TYPE_CHECKING
-from sqlalchemy import String, Integer, Float, ForeignKey, JSON
+from typing import TYPE_CHECKING, Dict, List, Optional
+
+from sqlalchemy import JSON, Float, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
