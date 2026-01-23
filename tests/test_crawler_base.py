@@ -4,7 +4,6 @@ from sqlalchemy.orm import Session
 
 from src.crawlers.base import BaseCrawler
 from src.db.database import Base
-from src.models import Bank, CreditCard
 
 
 class MockCrawler(BaseCrawler):
