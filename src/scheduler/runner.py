@@ -1,0 +1,47 @@
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
+from loguru import logger
+
+from src.scheduler.jobs import (
+    cleanup_expired_promotions,
+    run_daily_promotion_crawl,
+    run_weekly_card_crawl,
+)
+
+
+def create_scheduler() -> BackgroundScheduler:
+    scheduler = BackgroundScheduler()
+
+    # 每日凌晨 2:00 執行優惠爬取
+    scheduler.add_job(
+        run_daily_promotion_crawl,
+        CronTrigger(hour=2, minute=0),
+        id="daily_promotion_crawl",
+        name="Daily Promotion Crawl",
+    )
+
+    # 每週日凌晨 3:00 執行信用卡資訊爬取
+    scheduler.add_job(
+        run_weekly_card_crawl,
+        CronTrigger(day_of_week="sun", hour=3, minute=0),
+        id="weekly_card_crawl",
+        name="Weekly Card Crawl",
+    )
+
+    # 每日凌晨 4:00 清理過期優惠
+    scheduler.add_job(
+        cleanup_expired_promotions,
+        CronTrigger(hour=4, minute=0),
+        id="cleanup_expired",
+        name="Cleanup Expired Promotions",
+    )
+
+    logger.info("Scheduler configured with jobs")
+    return scheduler
+
+
+def start_scheduler():
+    scheduler = create_scheduler()
+    scheduler.start()
+    logger.info("Scheduler started")
+    return scheduler
