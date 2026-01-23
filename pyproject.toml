@@ -19,6 +19,9 @@ dependencies = [
     "pydantic-settings>=2.1.0",
 ]
 
+[project.scripts]
+credit-card-crawler = "src.cli:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.4.0",
