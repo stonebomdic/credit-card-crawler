@@ -12,21 +12,23 @@ class ScoringWeights:
     annual_fee_roi: float = 0.20
 
 
-def calculate_reward_score(
+def estimate_monthly_reward(
     card: CreditCard,
     spending_habits: Dict[str, float],
     monthly_amount: int,
     promotions: List[Promotion],
+    apply_limits: bool = True,
 ) -> float:
-    """計算回饋分數"""
-    total_reward = 0.0
+    """估算每月回饋金額（共用 helper）
 
+    遍歷每個消費類別，找最佳回饋率及其上限，計算回饋並依需求套用上限。
+    """
+    total_reward = 0.0
     base_rate = card.base_reward_rate or 0.0
 
     for category, ratio in spending_habits.items():
         category_spend = monthly_amount * ratio
 
-        # 找該類別最佳優惠
         best_rate = base_rate
         best_limit = None
         for promo in promotions:
@@ -37,11 +39,24 @@ def calculate_reward_score(
 
         category_reward = category_spend * (best_rate / 100)
 
-        # 套用回饋上限
-        if best_limit is not None and category_reward > best_limit:
+        if apply_limits and best_limit is not None and category_reward > best_limit:
             category_reward = best_limit
 
         total_reward += category_reward
+
+    return total_reward
+
+
+def calculate_reward_score(
+    card: CreditCard,
+    spending_habits: Dict[str, float],
+    monthly_amount: int,
+    promotions: List[Promotion],
+) -> float:
+    """計算回饋分數"""
+    total_reward = estimate_monthly_reward(
+        card, spending_habits, monthly_amount, promotions, apply_limits=True
+    )
 
     # 正規化到 0-100
     max_possible = monthly_amount * 0.05  # 假設最高 5% 回饋
@@ -103,17 +118,9 @@ def calculate_annual_fee_roi(
     if annual_fee == 0:
         return 80.0
 
-    # Estimate monthly reward (same logic as reward score)
-    base_rate = card.base_reward_rate or 0.0
-    monthly_reward = 0.0
-    for category, ratio in spending_habits.items():
-        category_spend = monthly_amount * ratio
-        best_rate = base_rate
-        for promo in promotions:
-            if promo.category == category and promo.reward_rate:
-                if promo.reward_rate > best_rate:
-                    best_rate = promo.reward_rate
-        monthly_reward += category_spend * (best_rate / 100)
+    monthly_reward = estimate_monthly_reward(
+        card, spending_habits, monthly_amount, promotions, apply_limits=True
+    )
 
     annual_reward = monthly_reward * 12
     annual_spending = monthly_amount * 12

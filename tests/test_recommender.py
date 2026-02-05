@@ -12,6 +12,7 @@ from src.recommender.scoring import (
     calculate_promotion_score,
     calculate_reward_score,
     calculate_total_score,
+    estimate_monthly_reward,
 )
 
 
@@ -493,3 +494,100 @@ def test_generate_reasons_max_five():
     }
     reasons = engine._generate_reasons(card, request, scores, [promo])
     assert len(reasons) <= 5
+
+
+# ── estimate_monthly_reward helper tests ──
+
+
+def test_estimate_monthly_reward_basic():
+    """基本回饋計算：無優惠時使用 base_reward_rate。"""
+    card = CreditCard(name="Basic", base_reward_rate=2.0)
+    reward = estimate_monthly_reward(
+        card=card,
+        spending_habits={"dining": 0.5, "others": 0.5},
+        monthly_amount=20000,
+        promotions=[],
+    )
+    # dining: 10000 * 2% = 200, others: 10000 * 2% = 200 => total 400
+    assert reward == 400.0
+
+
+def test_estimate_monthly_reward_with_limit():
+    """有回饋上限時，類別回饋應被封頂。"""
+    card = CreditCard(name="Limited", base_reward_rate=1.0)
+    promo = Promotion(
+        title="Dining", category="dining", reward_rate=5.0, reward_limit=200
+    )
+    reward = estimate_monthly_reward(
+        card=card,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo],
+    )
+    # Without limit: 30000 * 5% = 1500, capped to 200
+    assert reward == 200.0
+
+
+def test_estimate_monthly_reward_no_limit():
+    """無回饋上限時，不封頂。"""
+    card = CreditCard(name="Unlimited", base_reward_rate=1.0)
+    promo = Promotion(
+        title="Dining", category="dining", reward_rate=5.0, reward_limit=None
+    )
+    reward = estimate_monthly_reward(
+        card=card,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo],
+    )
+    # 30000 * 5% = 1500, no cap
+    assert reward == 1500.0
+
+
+def test_annual_fee_roi_with_promotion_and_limit():
+    """ROI 計算現在也應反映回饋上限。"""
+    card = CreditCard(name="Promo Limited Card", annual_fee=1000, base_reward_rate=1.0)
+    promo = Promotion(
+        title="Dining Promo", category="dining", reward_rate=5.0, reward_limit=200
+    )
+    score = calculate_annual_fee_roi(
+        card=card,
+        monthly_amount=20000,
+        spending_habits={"dining": 0.5, "others": 0.5},
+        promotions=[promo],
+    )
+    # dining: 10000 * 5% = 500, capped to 200; others: 10000 * 1% = 100
+    # monthly_reward = 300, annual_reward = 3600
+    # ROI = (3600 - 1000) / 240000 * 100 = 1.0833
+    # score = min(1.0833 / 0.05, 100) = 21.67
+    assert score == 21.67
+
+
+def test_engine_estimate_reward_respects_limit(db_session):
+    """engine 層的估算也應反映回饋上限。"""
+    bank = db_session.query(Bank).first()
+    card = CreditCard(
+        bank_id=bank.id, name="限額卡", annual_fee=0, base_reward_rate=1.0
+    )
+    db_session.add(card)
+    db_session.commit()
+
+    promo = Promotion(
+        card_id=card.id,
+        title="餐飲高回饋",
+        category="dining",
+        reward_rate=10.0,
+        reward_limit=500,
+    )
+    db_session.add(promo)
+    db_session.commit()
+
+    engine = RecommendationEngine(db_session)
+    reward = engine._estimate_monthly_reward(
+        card,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo],
+    )
+    # Without limit: 30000 * 10% = 3000, capped to 500
+    assert reward == 500.0

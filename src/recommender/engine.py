@@ -4,7 +4,7 @@ from typing import Dict, List
 from sqlalchemy.orm import Session
 
 from src.models import CreditCard, Promotion
-from src.recommender.scoring import calculate_total_score
+from src.recommender.scoring import calculate_total_score, estimate_monthly_reward
 
 
 @dataclass
@@ -97,21 +97,12 @@ class RecommendationEngine:
         promotions: List[Promotion],
     ) -> float:
         """估算每月回饋金額"""
-        total_reward = 0.0
-        base_rate = card.base_reward_rate or 0.0
-
-        for category, ratio in spending_habits.items():
-            category_spend = monthly_amount * ratio
-
-            best_rate = base_rate
-            for promo in promotions:
-                if promo.category == category and promo.reward_rate:
-                    if promo.reward_rate > best_rate:
-                        best_rate = promo.reward_rate
-
-            total_reward += category_spend * (best_rate / 100)
-
-        return round(total_reward, 0)
+        return round(
+            estimate_monthly_reward(
+                card, spending_habits, monthly_amount, promotions, apply_limits=True
+            ),
+            0,
+        )
 
     def _generate_reasons(
         self,
@@ -160,16 +151,13 @@ class RecommendationEngine:
         elif scores.get("annual_fee_roi_score", 0) > 60:
             annual_fee = card.annual_fee or 0
             if annual_fee > 0:
-                base_rate = card.base_reward_rate or 0.0
-                monthly_reward = 0.0
-                for category, ratio in request.spending_habits.items():
-                    category_spend = request.monthly_amount * ratio
-                    best_rate = base_rate
-                    for promo in promotions:
-                        if promo.category == category and promo.reward_rate:
-                            if promo.reward_rate > best_rate:
-                                best_rate = promo.reward_rate
-                    monthly_reward += category_spend * (best_rate / 100)
+                monthly_reward = estimate_monthly_reward(
+                    card,
+                    request.spending_habits,
+                    request.monthly_amount,
+                    promotions,
+                    apply_limits=True,
+                )
                 annual_reward = monthly_reward * 12
                 multiplier = annual_reward / annual_fee if annual_fee > 0 else 0
                 if multiplier >= 1:
