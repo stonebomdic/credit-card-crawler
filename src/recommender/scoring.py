@@ -66,6 +66,15 @@ def calculate_feature_score(
         "lounge_access": lambda c: features.get("lounge_access", False),
         "cashback": lambda c: features.get("reward_type") == "cashback",
         "miles": lambda c: features.get("reward_type") == "miles",
+        "high_reward": lambda c: (c.base_reward_rate or 0) >= 2.0,
+        "travel": lambda c: (
+            features.get("reward_type") == "miles"
+            or features.get("overseas", False)
+            or features.get("airport_transfer", False)
+        ),
+        "dining": lambda c: features.get("dining", False),
+        "mobile_pay": lambda c: features.get("mobile_pay", False),
+        "online_shopping": lambda c: features.get("online_shopping", False),
     }
 
     for pref in preferences:

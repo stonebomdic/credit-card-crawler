@@ -216,6 +216,65 @@ def test_reward_score_limit_not_reached():
     assert score == 100.0
 
 
+def test_feature_score_high_reward():
+    """high_reward preference matches cards with base_reward_rate >= 2.0."""
+    card_high = CreditCard(name="High", base_reward_rate=2.5)
+    card_low = CreditCard(name="Low", base_reward_rate=1.0)
+    assert calculate_feature_score(card_high, ["high_reward"]) == 100.0
+    assert calculate_feature_score(card_low, ["high_reward"]) == 0.0
+
+
+def test_feature_score_travel():
+    """travel preference matches cards with mileage, overseas, or airport_transfer features."""
+    card_miles = CreditCard(name="Miles Card", features={"reward_type": "miles"})
+    card_overseas = CreditCard(name="Overseas Card", features={"overseas": True})
+    card_airport = CreditCard(name="Airport Card", features={"airport_transfer": True})
+    card_plain = CreditCard(name="Plain Card", features={"reward_type": "cashback"})
+
+    assert calculate_feature_score(card_miles, ["travel"]) == 100.0
+    assert calculate_feature_score(card_overseas, ["travel"]) == 100.0
+    assert calculate_feature_score(card_airport, ["travel"]) == 100.0
+    assert calculate_feature_score(card_plain, ["travel"]) == 0.0
+
+
+def test_feature_score_dining():
+    """dining preference matches cards with dining-related features."""
+    card_dining = CreditCard(name="Dining Card", features={"dining": True})
+    card_no_dining = CreditCard(name="Other Card", features={"online_shopping": True})
+    assert calculate_feature_score(card_dining, ["dining"]) == 100.0
+    assert calculate_feature_score(card_no_dining, ["dining"]) == 0.0
+
+
+def test_feature_score_mobile_pay():
+    """mobile_pay preference matches cards with mobile_pay feature."""
+    card_mobile = CreditCard(name="Mobile Card", features={"mobile_pay": True})
+    card_no_mobile = CreditCard(name="Other Card", features={})
+    assert calculate_feature_score(card_mobile, ["mobile_pay"]) == 100.0
+    assert calculate_feature_score(card_no_mobile, ["mobile_pay"]) == 0.0
+
+
+def test_feature_score_online_shopping():
+    """online_shopping preference matches cards with online_shopping feature."""
+    card_online = CreditCard(name="Online Card", features={"online_shopping": True})
+    card_no_online = CreditCard(name="Other Card", features={})
+    assert calculate_feature_score(card_online, ["online_shopping"]) == 100.0
+    assert calculate_feature_score(card_no_online, ["online_shopping"]) == 0.0
+
+
+def test_feature_score_multiple_new_preferences():
+    """Multiple new preferences should calculate correctly."""
+    card = CreditCard(
+        name="Super Card",
+        annual_fee=0,
+        base_reward_rate=3.0,
+        features={"mobile_pay": True, "dining": True, "online_shopping": True},
+    )
+    # no_annual_fee (match), high_reward (match), dining (match), travel (no match)
+    score = calculate_feature_score(card, ["no_annual_fee", "high_reward", "dining", "travel"])
+    # 3 out of 4 matched = 75.0
+    assert score == 75.0
+
+
 def test_recommendation_engine(db_session):
     engine = RecommendationEngine(db_session)
 
