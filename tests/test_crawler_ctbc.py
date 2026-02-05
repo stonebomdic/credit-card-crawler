@@ -1,5 +1,4 @@
 import pytest
-from bs4 import BeautifulSoup
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -16,41 +15,45 @@ def db_session():
     Base.metadata.drop_all(engine)
 
 
-def test_detect_card_type():
+def test_parse_card_level():
     crawler = CtbcCrawler.__new__(CtbcCrawler)
 
-    assert crawler._detect_card_type("LINE Pay 御璽卡") == "御璽卡"
-    assert crawler._detect_card_type("現金回饋白金卡") == "白金卡"
-    assert crawler._detect_card_type("商旅無限卡") == "無限卡"
-    assert crawler._detect_card_type("普通卡") is None
+    assert crawler._parse_card_level(["御璽/鈦金/晶緻卡"]) == "御璽卡"
+    assert crawler._parse_card_level(["白金卡"]) == "白金卡"
+    assert crawler._parse_card_level(["無限/世界/極致卡"]) == "無限卡"
+    assert crawler._parse_card_level(["其他"]) == "白金卡"
 
 
 def test_detect_category():
     crawler = CtbcCrawler.__new__(CtbcCrawler)
 
-    assert crawler._detect_category("餐飲優惠", None) == "dining"
-    assert crawler._detect_category("網購回饋", "蝦皮滿額折") == "online_shopping"
-    assert crawler._detect_category("加油優惠", None) == "transport"
-    assert crawler._detect_category("一般優惠", None) == "others"
+    assert crawler._detect_category("餐飲優惠") == "dining"
+    assert crawler._detect_category("網購回饋 蝦皮滿額折") == "online_shopping"
+    assert crawler._detect_category("加油優惠") == "transport"
+    assert crawler._detect_category("一般優惠") == "others"
 
 
-def test_parse_card_item():
+def test_parse_card_json():
     crawler = CtbcCrawler.__new__(CtbcCrawler)
-    html = """
-    <div class="card-item">
-        <h3 class="card-name">LINE Pay 御璽卡</h3>
-        <img src="https://example.com/card.jpg">
-        <a href="https://example.com/apply">申請</a>
-    </div>
-    """
-    soup = BeautifulSoup(html, "lxml")
-    item = soup.select_one(".card-item")
+    crawler.base_url = "https://www.ctbcbank.com"
 
-    result = crawler._parse_card_item(item)
+    card_json = {
+        "cardName": "LINE Pay 御璽卡",
+        "cardLevel": ["御璽/鈦金/晶緻卡"],
+        "cardType": ["聯名卡"],
+        "rewardType": ["LINE POINTS"],
+        "extraFunction": [],
+        "cardFeature": ["最高 3% 回饋"],
+        "annualFee": "免年費",
+        "cardImg": ["/content/dam/card.jpg"],
+        "introLink": "/personal/credit-card/linepay",
+    }
+
+    result = crawler._parse_card_json(card_json)
 
     assert result["name"] == "LINE Pay 御璽卡"
     assert result["card_type"] == "御璽卡"
-    assert result["image_url"] == "https://example.com/card.jpg"
+    assert result["image_url"] == "https://www.ctbcbank.com/content/dam/card.jpg"
 
 
 def test_crawler_creates_bank(db_session):
