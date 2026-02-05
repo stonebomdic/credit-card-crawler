@@ -66,7 +66,7 @@ def test_calculate_feature_score_with_annual_fee():
 def test_calculate_promotion_score():
     promos = [Promotion(title="優惠1"), Promotion(title="優惠2")]
     score = calculate_promotion_score(promos)
-    assert score == 20.0
+    assert score == 10.0  # Each promo without rate contributes 1, total = (1+1)*5 = 10
 
 
 def test_annual_fee_roi_free_card():
@@ -273,6 +273,52 @@ def test_feature_score_multiple_new_preferences():
     score = calculate_feature_score(card, ["no_annual_fee", "high_reward", "dining", "travel"])
     # 3 out of 4 matched = 75.0
     assert score == 75.0
+
+
+def test_promotion_score_weights_by_rate():
+    """One promo with 10% rate should score higher than three promos with 1% rate."""
+    promo_high = [Promotion(title="High Rate", reward_rate=10.0)]
+    promo_low = [
+        Promotion(title="Low 1", reward_rate=1.0),
+        Promotion(title="Low 2", reward_rate=1.0),
+        Promotion(title="Low 3", reward_rate=1.0),
+    ]
+
+    score_high = calculate_promotion_score(promo_high)
+    score_low = calculate_promotion_score(promo_low)
+
+    # High: min(min(10, 10) * 5, 100) = min(50, 100) = 50
+    # Low: min((1+1+1) * 5, 100) = min(15, 100) = 15
+    assert score_high == 50.0
+    assert score_low == 15.0
+    assert score_high > score_low
+
+
+def test_promotion_score_caps_individual_rate():
+    """Individual promo rate contribution should be capped at 10."""
+    promo = [Promotion(title="Extreme", reward_rate=20.0)]
+    score = calculate_promotion_score(promo)
+    # min(20, 10) = 10, then 10 * 5 = 50
+    assert score == 50.0
+
+
+def test_promotion_score_no_rate_defaults_to_one():
+    """Promos without reward_rate should contribute 1."""
+    promos = [
+        Promotion(title="No Rate 1", reward_rate=None),
+        Promotion(title="No Rate 2", reward_rate=None),
+    ]
+    score = calculate_promotion_score(promos)
+    # (1 + 1) * 5 = 10
+    assert score == 10.0
+
+
+def test_promotion_score_caps_at_100():
+    """Total score should be capped at 100."""
+    promos = [Promotion(title=f"P{i}", reward_rate=10.0) for i in range(5)]
+    score = calculate_promotion_score(promos)
+    # 5 * min(10, 10) * 5 = 250, capped at 100
+    assert score == 100.0
 
 
 def test_recommendation_engine(db_session):

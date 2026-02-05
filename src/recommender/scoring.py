@@ -131,12 +131,17 @@ def calculate_annual_fee_roi(
 
 
 def calculate_promotion_score(promotions: List[Promotion]) -> float:
-    """計算優惠分數"""
+    """計算優惠分數
+
+    Weights each promotion by its reward_rate (capped at 10).
+    Promos without a rate contribute 1 point.
+    Formula: score = min(sum(min(rate or 1, 10) for each promo) * 5, 100)
+    """
     if not promotions:
         return 0.0
 
-    # 根據優惠數量和品質計算分數
-    score = min(len(promotions) * 10, 100)
+    total = sum(min(promo.reward_rate or 1, 10) for promo in promotions)
+    score = min(total * 5, 100)
     return round(score, 2)
 
 
