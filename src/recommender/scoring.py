@@ -27,12 +27,19 @@ def calculate_reward_score(
 
         # 找該類別最佳優惠
         best_rate = base_rate
+        best_limit = None
         for promo in promotions:
             if promo.category == category and promo.reward_rate:
                 if promo.reward_rate > best_rate:
                     best_rate = promo.reward_rate
+                    best_limit = promo.reward_limit
 
         category_reward = category_spend * (best_rate / 100)
+
+        # 套用回饋上限
+        if best_limit is not None and category_reward > best_limit:
+            category_reward = best_limit
+
         total_reward += category_reward
 
     # 正規化到 0-100

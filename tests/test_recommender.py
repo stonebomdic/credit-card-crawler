@@ -9,6 +9,7 @@ from src.recommender.scoring import (
     calculate_annual_fee_roi,
     calculate_feature_score,
     calculate_promotion_score,
+    calculate_reward_score,
 )
 
 
@@ -135,6 +136,84 @@ def test_annual_fee_roi_with_promotion():
     # ROI = (600*12 - 1000) / (20000*12) * 100 = 6200/240000 * 100 = 2.583
     # score = min(2.583 / 0.05 * 100, 100) = min(51.67, 100) = 51.67
     assert score == 51.67
+
+
+def test_reward_score_respects_reward_limit():
+    """Card with 5% rate but 200 limit should cap reward at 200 for that category."""
+    card = CreditCard(name="Limited Card", base_reward_rate=1.0)
+    promo_limited = Promotion(
+        title="High Rate Limited",
+        category="dining",
+        reward_rate=5.0,
+        reward_limit=200,
+    )
+    score_limited = calculate_reward_score(
+        card=card,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo_limited],
+    )
+    # Without limit: 30000 * 5% = 1500
+    # With limit: min(1500, 200) = 200
+    # max_possible = 30000 * 0.05 = 1500
+    # score = (200 / 1500) * 100 = 13.33
+    assert score_limited == 13.33
+
+
+def test_reward_score_no_limit_vs_limited():
+    """Card with 2% no limit should beat 5% with 200 limit when spending 30000."""
+    card_a = CreditCard(name="No Limit Card", base_reward_rate=1.0)
+    promo_no_limit = Promotion(
+        title="Moderate No Limit",
+        category="dining",
+        reward_rate=2.0,
+        reward_limit=None,
+    )
+    score_no_limit = calculate_reward_score(
+        card=card_a,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo_no_limit],
+    )
+
+    card_b = CreditCard(name="Limited Card", base_reward_rate=1.0)
+    promo_limited = Promotion(
+        title="High Rate Limited",
+        category="dining",
+        reward_rate=5.0,
+        reward_limit=200,
+    )
+    score_limited = calculate_reward_score(
+        card=card_b,
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        promotions=[promo_limited],
+    )
+
+    # No limit: 30000 * 2% = 600 => score = (600/1500)*100 = 40.0
+    # Limited: min(30000*5%, 200) = 200 => score = (200/1500)*100 = 13.33
+    assert score_no_limit > score_limited
+
+
+def test_reward_score_limit_not_reached():
+    """When spending is low enough that limit isn't reached, reward is not capped."""
+    card = CreditCard(name="Card", base_reward_rate=1.0)
+    promo = Promotion(
+        title="Limited Promo",
+        category="dining",
+        reward_rate=5.0,
+        reward_limit=500,
+    )
+    score = calculate_reward_score(
+        card=card,
+        spending_habits={"dining": 1.0},
+        monthly_amount=5000,
+        promotions=[promo],
+    )
+    # 5000 * 5% = 250 < 500 limit, so no cap
+    # max_possible = 5000 * 0.05 = 250
+    # score = (250/250)*100 = 100.0
+    assert score == 100.0
 
 
 def test_recommendation_engine(db_session):
