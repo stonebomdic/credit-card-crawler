@@ -70,6 +70,50 @@ def calculate_feature_score(
     return round(score, 2)
 
 
+def calculate_annual_fee_roi(
+    card: CreditCard,
+    monthly_amount: int,
+    spending_habits: Dict[str, float],
+    promotions: List[Promotion],
+) -> float:
+    """計算年費投資報酬率分數
+
+    Free cards get 80. For paid cards, estimate annual reward vs annual fee.
+    ROI = (annual_reward - annual_fee) / annual_spending
+    Score is normalized to 0-100.
+    """
+    annual_fee = card.annual_fee or 0
+    if annual_fee == 0:
+        return 80.0
+
+    # Estimate monthly reward (same logic as reward score)
+    base_rate = card.base_reward_rate or 0.0
+    monthly_reward = 0.0
+    for category, ratio in spending_habits.items():
+        category_spend = monthly_amount * ratio
+        best_rate = base_rate
+        for promo in promotions:
+            if promo.category == category and promo.reward_rate:
+                if promo.reward_rate > best_rate:
+                    best_rate = promo.reward_rate
+        monthly_reward += category_spend * (best_rate / 100)
+
+    annual_reward = monthly_reward * 12
+    annual_spending = monthly_amount * 12
+
+    if annual_spending == 0:
+        return 0.0
+
+    roi = (annual_reward - annual_fee) / annual_spending * 100
+
+    if roi <= 0:
+        return 0.0
+
+    # Normalize: 5% net ROI = perfect score
+    score = min(roi / 0.05, 100)
+    return round(score, 2)
+
+
 def calculate_promotion_score(promotions: List[Promotion]) -> float:
     """計算優惠分數"""
     if not promotions:
