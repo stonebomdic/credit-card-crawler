@@ -1,0 +1,18 @@
+# Production overrides
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  app:
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=false
+    restart: always
+    # Use the default entrypoint from Dockerfile (entrypoint.sh)
+    # No source code mounts - uses baked-in code from the image
+    volumes:
+      - app-data:/app/data
+      - app-logs:/app/logs
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

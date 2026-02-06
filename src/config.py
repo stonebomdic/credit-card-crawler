@@ -9,6 +9,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
     )
 
+    # Environment
+    environment: str = "development"  # "development" or "production"
+
     # Database
     database_url: str = "sqlite+aiosqlite:///./data/credit_cards.db"
 
@@ -27,6 +30,10 @@ class Settings(BaseSettings):
     telegram_chat_id: str = ""
     discord_webhook_url: str = ""
     notification_enabled: bool = True
+
+    @property
+    def is_production(self) -> bool:
+        return self.environment == "production"
 
 
 @lru_cache

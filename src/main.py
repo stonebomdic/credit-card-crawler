@@ -31,11 +31,17 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down...")
 
 
+# Disable interactive docs in production
+docs_url = None if settings.is_production else "/docs"
+redoc_url = None if settings.is_production else "/redoc"
+
 app = FastAPI(
     title="Credit Card Crawler API",
     description="台灣信用卡資訊查詢與推薦 API",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url=docs_url,
+    redoc_url=redoc_url,
 )
 
 app.add_middleware(
