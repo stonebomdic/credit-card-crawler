@@ -44,7 +44,9 @@ export default function CardsPage() {
   }, [page, selectedBankId, selectedCardType]);
 
   useEffect(() => {
-    fetchBanks().then(setBanks).catch(() => {});
+    fetchBanks().then(setBanks).catch((err) => {
+      console.warn("Failed to load banks:", err);
+    });
   }, []);
 
   useEffect(() => {
@@ -73,8 +75,9 @@ export default function CardsPage() {
             <h2 className="font-semibold text-gray-700">篩選條件</h2>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">發卡銀行</label>
+              <label htmlFor="bank-filter" className="block text-sm text-gray-600 mb-1">發卡銀行</label>
               <select
+                id="bank-filter"
                 value={selectedBankId ?? ""}
                 onChange={handleBankChange}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -89,8 +92,9 @@ export default function CardsPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-gray-600 mb-1">卡片類型</label>
+              <label htmlFor="card-type-filter" className="block text-sm text-gray-600 mb-1">卡片類型</label>
               <select
+                id="card-type-filter"
                 value={selectedCardType}
                 onChange={handleCardTypeChange}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -176,8 +180,9 @@ export default function CardsPage() {
 
               {/* Pagination */}
               {data.pages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-8">
+                <nav role="navigation" aria-label="分頁導覽" className="flex items-center justify-center gap-2 mt-8">
                   <button
+                    aria-label="前往上一頁"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
                     className="px-3 py-1.5 text-sm border border-gray-300 rounded-md disabled:opacity-40 hover:bg-gray-100"
@@ -188,13 +193,14 @@ export default function CardsPage() {
                     第 {data.page} / {data.pages} 頁
                   </span>
                   <button
+                    aria-label="前往下一頁"
                     onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
                     disabled={page === data.pages}
                     className="px-3 py-1.5 text-sm border border-gray-300 rounded-md disabled:opacity-40 hover:bg-gray-100"
                   >
                     下一頁
                   </button>
-                </div>
+                </nav>
               )}
             </>
           )}
