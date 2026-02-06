@@ -16,7 +16,7 @@ export default function CardDetailPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!cardId) return;
+    if (!cardId || isNaN(cardId)) return;
 
     setLoading(true);
     setError(null);
@@ -34,12 +34,16 @@ export default function CardDetailPage() {
       });
   }, [cardId]);
 
+  if (!cardId || isNaN(cardId)) {
+    return <div className="text-center py-12 text-red-600" role="alert">無效的信用卡 ID</div>;
+  }
+
   if (loading) {
-    return <div className="text-center py-12 text-gray-500">載入中...</div>;
+    return <div className="text-center py-12 text-gray-500" role="status" aria-live="polite">載入中...</div>;
   }
 
   if (error) {
-    return <div className="text-center py-12 text-red-600">{error}</div>;
+    return <div className="text-center py-12 text-red-600" role="alert" aria-live="assertive">{error}</div>;
   }
 
   if (!card) {
@@ -122,6 +126,7 @@ export default function CardDetailPage() {
                   href={card.apply_url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="立即申辦 (在新視窗開啟)"
                   className="inline-block bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
                 >
                   立即申辦
