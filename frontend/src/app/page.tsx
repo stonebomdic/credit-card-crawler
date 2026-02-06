@@ -58,7 +58,7 @@ export default function Home() {
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
         <Link
           href="/cards"
-          className="block bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          className="block bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             瀏覽信用卡
@@ -69,7 +69,7 @@ export default function Home() {
         </Link>
         <Link
           href="/recommend"
-          className="block bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow"
+          className="block bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <h2 className="text-xl font-semibold text-gray-900 mb-2">
             個人化推薦
