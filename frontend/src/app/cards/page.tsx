@@ -1,0 +1,205 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
+import { fetchBanks, fetchCards } from "@/lib/api";
+import type { Bank, CreditCardListItem, PaginatedResponse } from "@/lib/types";
+
+const CARD_TYPES = [
+  { value: "", label: "全部類型" },
+  { value: "visa", label: "VISA" },
+  { value: "mastercard", label: "MasterCard" },
+  { value: "jcb", label: "JCB" },
+];
+
+const PAGE_SIZE = 20;
+
+export default function CardsPage() {
+  const [banks, setBanks] = useState<Bank[]>([]);
+  const [data, setData] = useState<PaginatedResponse<CreditCardListItem> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Filters
+  const [selectedBankId, setSelectedBankId] = useState<number | undefined>(undefined);
+  const [selectedCardType, setSelectedCardType] = useState<string>("");
+  const [page, setPage] = useState(1);
+
+  const loadCards = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await fetchCards({
+        page,
+        size: PAGE_SIZE,
+        bank_id: selectedBankId,
+        card_type: selectedCardType || undefined,
+      });
+      setData(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "載入失敗");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, selectedBankId, selectedCardType]);
+
+  useEffect(() => {
+    fetchBanks().then(setBanks).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadCards();
+  }, [loadCards]);
+
+  const handleBankChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedBankId(val ? Number(val) : undefined);
+    setPage(1);
+  };
+
+  const handleCardTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedCardType(e.target.value);
+    setPage(1);
+  };
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900 mb-6">信用卡列表</h1>
+
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Filter sidebar */}
+        <aside className="w-full lg:w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg shadow p-4 space-y-4">
+            <h2 className="font-semibold text-gray-700">篩選條件</h2>
+
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">發卡銀行</label>
+              <select
+                value={selectedBankId ?? ""}
+                onChange={handleBankChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">全部銀行</option>
+                {banks.map((bank) => (
+                  <option key={bank.id} value={bank.id}>
+                    {bank.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">卡片類型</label>
+              <select
+                value={selectedCardType}
+                onChange={handleCardTypeChange}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                {CARD_TYPES.map((type) => (
+                  <option key={type.value} value={type.value}>
+                    {type.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </aside>
+
+        {/* Card grid */}
+        <section className="flex-1">
+          {loading && (
+            <div className="text-center py-12 text-gray-500">載入中...</div>
+          )}
+
+          {error && (
+            <div className="text-center py-12 text-red-600">{error}</div>
+          )}
+
+          {!loading && !error && data && (
+            <>
+              <p className="text-sm text-gray-500 mb-4">
+                共 {data.total} 張信用卡
+              </p>
+
+              {data.items.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  找不到符合條件的信用卡
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {data.items.map((card) => (
+                    <Link
+                      key={card.id}
+                      href={`/cards/${card.id}`}
+                      className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+                    >
+                      <div className="p-4">
+                        {card.image_url && (
+                          <div className="mb-3 flex justify-center">
+                            <img
+                              src={card.image_url}
+                              alt={card.name}
+                              className="h-32 object-contain rounded"
+                            />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">
+                          {card.name}
+                        </h3>
+                        <p className="text-sm text-gray-500 mb-2">
+                          {card.bank_name}
+                        </p>
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          {card.card_type && (
+                            <span className="bg-blue-100 text-blue-800 px-2 py-0.5 rounded">
+                              {card.card_type}
+                            </span>
+                          )}
+                          {card.annual_fee !== null && (
+                            <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded">
+                              {card.annual_fee === 0
+                                ? "免年費"
+                                : `年費 $${card.annual_fee.toLocaleString()}`}
+                            </span>
+                          )}
+                          {card.base_reward_rate !== null && (
+                            <span className="bg-green-100 text-green-800 px-2 py-0.5 rounded">
+                              回饋 {card.base_reward_rate}%
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {data.pages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-8">
+                  <button
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md disabled:opacity-40 hover:bg-gray-100"
+                  >
+                    上一頁
+                  </button>
+                  <span className="text-sm text-gray-600">
+                    第 {data.page} / {data.pages} 頁
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(data.pages, p + 1))}
+                    disabled={page === data.pages}
+                    className="px-3 py-1.5 text-sm border border-gray-300 rounded-md disabled:opacity-40 hover:bg-gray-100"
+                  >
+                    下一頁
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
