@@ -14,6 +14,20 @@ const CARD_TYPES = [
 
 const PAGE_SIZE = 20;
 
+function getPageNumbers(current: number, total: number): (number | "...")[] {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | "...")[] = [1];
+  if (current > 3) pages.push("...");
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (current < total - 2) pages.push("...");
+  pages.push(total);
+  return pages;
+}
+
 export default function CardsPage() {
   const [banks, setBanks] = useState<Bank[]>([]);
   const [data, setData] = useState<PaginatedResponse<CreditCardListItem> | null>(null);
@@ -190,7 +204,7 @@ export default function CardsPage() {
 
               {/* Pagination */}
               {data.pages > 1 && (
-                <nav role="navigation" aria-label="分頁導覽" className="flex items-center justify-center gap-2 mt-8">
+                <nav role="navigation" aria-label="分頁導覽" className="flex items-center justify-center gap-1.5 mt-8">
                   <button
                     aria-label="前往上一頁"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -199,9 +213,27 @@ export default function CardsPage() {
                   >
                     上一頁
                   </button>
-                  <span className="text-sm text-gray-600">
-                    第 {data.page} / {data.pages} 頁
-                  </span>
+                  {getPageNumbers(data.page, data.pages).map((p, idx) =>
+                    p === "..." ? (
+                      <span key={`ellipsis-${idx}`} className="px-2 py-1.5 text-sm text-gray-400">
+                        ...
+                      </span>
+                    ) : (
+                      <button
+                        key={p}
+                        onClick={() => setPage(p)}
+                        aria-label={`前往第 ${p} 頁`}
+                        aria-current={p === data.page ? "page" : undefined}
+                        className={`w-9 h-9 text-sm rounded-md ${
+                          p === data.page
+                            ? "bg-blue-600 text-white font-semibold"
+                            : "border border-gray-300 hover:bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
                   <button
                     aria-label="前往下一頁"
                     onClick={() => setPage((p) => Math.min(data.pages, p + 1))}

@@ -32,6 +32,10 @@ const PREFERENCES: { value: string; label: string }[] = [
   { value: "travel_insurance", label: "旅遊保險" },
 ];
 
+const AMOUNT_PRESETS = [10000, 30000, 50000, 100000];
+
+const STEP_LABELS = ["每月消費", "消費比例", "偏好條件"];
+
 function normalizeHabits(raw: SpendingHabits): SpendingHabits {
   const total = Object.values(raw).reduce((sum, v) => sum + v, 0);
   if (total === 0) {
@@ -49,7 +53,9 @@ function normalizeHabits(raw: SpendingHabits): SpendingHabits {
 }
 
 export default function RecommendPage() {
+  const [step, setStep] = useState(1);
   const [monthlyAmount, setMonthlyAmount] = useState<number>(30000);
+  const [customAmount, setCustomAmount] = useState<string>("");
   const [habits, setHabits] = useState<SpendingHabits>({
     dining: 20,
     online_shopping: 15,
@@ -78,8 +84,7 @@ export default function RecommendPage() {
     );
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     setLoading(true);
     setError(null);
 
@@ -99,6 +104,21 @@ export default function RecommendPage() {
     }
   };
 
+  const handleSelectPreset = (amount: number) => {
+    setMonthlyAmount(amount);
+    setCustomAmount("");
+  };
+
+  const handleCustomAmountChange = (val: string) => {
+    setCustomAmount(val);
+    const num = Number(val);
+    if (!isNaN(num) && num > 0) {
+      setMonthlyAmount(num);
+    }
+  };
+
+  const isPreset = AMOUNT_PRESETS.includes(monthlyAmount) && customAmount === "";
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">
@@ -106,102 +126,230 @@ export default function RecommendPage() {
       </h1>
 
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Form */}
-        <form
-          onSubmit={handleSubmit}
-          className="w-full lg:w-96 flex-shrink-0 space-y-6"
-          aria-label="信用卡推薦條件表單"
-        >
-          {/* Monthly spending */}
-          <div className="bg-white rounded-lg shadow p-5">
-            <h2 className="font-semibold text-gray-700 mb-3">每月消費金額</h2>
-            <div className="flex items-center gap-2">
-              <span className="text-gray-500">$</span>
-              <input
-                id="monthly-amount"
-                type="number"
-                min={0}
-                step={1000}
-                value={monthlyAmount}
-                onChange={(e) => setMonthlyAmount(Number(e.target.value))}
-                aria-label="每月消費金額"
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+        {/* Wizard Form */}
+        <div className="w-full lg:w-[440px] flex-shrink-0 space-y-6">
+          {/* Progress Bar */}
+          <div className="bg-white rounded-lg shadow p-4">
+            <div className="flex items-center justify-between">
+              {STEP_LABELS.map((label, idx) => {
+                const stepNum = idx + 1;
+                const isCompleted = step > stepNum;
+                const isCurrent = step === stepNum;
+                return (
+                  <div key={label} className="flex items-center flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
+                          isCompleted
+                            ? "bg-green-500 text-white"
+                            : isCurrent
+                              ? "bg-blue-600 text-white"
+                              : "bg-gray-200 text-gray-500"
+                        }`}
+                      >
+                        {isCompleted ? "✓" : stepNum}
+                      </div>
+                      <span
+                        className={`text-xs mt-1 ${
+                          isCurrent ? "text-blue-600 font-medium" : "text-gray-500"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                    </div>
+                    {idx < STEP_LABELS.length - 1 && (
+                      <div
+                        className={`h-0.5 flex-1 mx-1 -mt-4 ${
+                          step > stepNum ? "bg-green-500" : "bg-gray-200"
+                        }`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Spending habits */}
-          <div className="bg-white rounded-lg shadow p-5">
-            <h2 className="font-semibold text-gray-700 mb-1">消費比例分配</h2>
-            <p className="text-xs text-gray-400 mb-3">
-              調整各類別比例，系統會自動正規化為合計 100%。
-              目前合計：
-              <span
-                className={
-                  habitsTotal === 100 ? "text-green-600" : "text-orange-600"
-                }
-              >
-                {habitsTotal}%
-              </span>
-            </p>
-            <div className="space-y-3">
-              {CATEGORIES.map(({ key, label }) => (
-                <div key={key}>
-                  <div className="flex items-center justify-between text-sm mb-1">
-                    <label htmlFor={`habit-${key}`} className="text-gray-600">{label}</label>
-                    <span className="text-gray-900 font-medium">
-                      {habits[key]}%
-                    </span>
-                  </div>
+          {/* Step 1: Monthly Amount */}
+          {step === 1 && (
+            <div className="bg-white rounded-lg shadow p-5">
+              <h2 className="font-semibold text-gray-700 mb-4">每月消費金額</h2>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                {AMOUNT_PRESETS.map((amount) => (
+                  <button
+                    key={amount}
+                    type="button"
+                    onClick={() => handleSelectPreset(amount)}
+                    className={`py-3 rounded-lg text-sm font-medium transition-colors ${
+                      monthlyAmount === amount && isPreset
+                        ? "bg-blue-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
+                  >
+                    ${amount.toLocaleString()}
+                  </button>
+                ))}
+              </div>
+              <div>
+                <label htmlFor="custom-amount" className="block text-sm text-gray-500 mb-1">
+                  自訂金額
+                </label>
+                <div className="flex items-center gap-2">
+                  <span className="text-gray-500">$</span>
                   <input
-                    id={`habit-${key}`}
-                    type="range"
+                    id="custom-amount"
+                    type="number"
                     min={0}
-                    max={100}
-                    value={habits[key]}
-                    onChange={(e) =>
-                      handleHabitChange(key, Number(e.target.value))
-                    }
-                    aria-label={`${label}消費比例`}
-                    className="w-full accent-blue-600"
+                    step={1000}
+                    value={customAmount}
+                    placeholder="輸入自訂金額"
+                    onChange={(e) => handleCustomAmountChange(e.target.value)}
+                    className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
-              ))}
+              </div>
+              <p className="text-sm text-gray-500 mt-3">
+                目前設定：<span className="font-semibold text-gray-900">${monthlyAmount.toLocaleString()}</span>/月
+              </p>
             </div>
-          </div>
+          )}
 
-          {/* Preferences */}
-          <div className="bg-white rounded-lg shadow p-5">
-            <h2 className="font-semibold text-gray-700 mb-3">偏好條件</h2>
-            <div className="space-y-2" role="group" aria-label="偏好條件選擇">
-              {PREFERENCES.map(({ value, label }) => (
-                <label
-                  key={value}
-                  htmlFor={`pref-${value}`}
-                  className="flex items-center gap-2 cursor-pointer"
-                >
-                  <input
-                    id={`pref-${value}`}
-                    type="checkbox"
-                    checked={preferences.includes(value)}
-                    onChange={() => togglePreference(value)}
-                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{label}</span>
-                </label>
-              ))}
+          {/* Step 2: Spending Habits */}
+          {step === 2 && (
+            <div className="bg-white rounded-lg shadow p-5">
+              <h2 className="font-semibold text-gray-700 mb-1">消費比例分配</h2>
+              <p className="text-xs text-gray-400 mb-3">
+                調整各類別比例，系統會自動正規化為合計 100%。
+                目前合計：
+                <span className={habitsTotal === 100 ? "text-green-600" : "text-orange-600"}>
+                  {habitsTotal}%
+                </span>
+              </p>
+
+              {/* Visual ratio bar */}
+              <div className="flex h-3 rounded-full overflow-hidden mb-4">
+                {CATEGORIES.map(({ key, label }) => {
+                  const pct = habitsTotal > 0 ? (habits[key] / habitsTotal) * 100 : 0;
+                  if (pct === 0) return null;
+                  return (
+                    <div
+                      key={key}
+                      title={`${label} ${Math.round(pct)}%`}
+                      style={{ width: `${pct}%` }}
+                      className="first:rounded-l-full last:rounded-r-full transition-all"
+                      data-category={key}
+                    />
+                  );
+                })}
+              </div>
+              <style>{`
+                [data-category="dining"] { background: #3b82f6; }
+                [data-category="online_shopping"] { background: #8b5cf6; }
+                [data-category="transport"] { background: #06b6d4; }
+                [data-category="overseas"] { background: #f59e0b; }
+                [data-category="convenience_store"] { background: #10b981; }
+                [data-category="department_store"] { background: #ec4899; }
+                [data-category="supermarket"] { background: #f97316; }
+                [data-category="streaming"] { background: #6366f1; }
+                [data-category="others"] { background: #9ca3af; }
+              `}</style>
+
+              <div className="space-y-3">
+                {CATEGORIES.map(({ key, label }) => (
+                  <div key={key}>
+                    <div className="flex items-center justify-between text-sm mb-1">
+                      <label htmlFor={`habit-${key}`} className="text-gray-600 flex items-center gap-1.5">
+                        <span
+                          className="inline-block w-2.5 h-2.5 rounded-full"
+                          data-category={key}
+                        />
+                        {label}
+                      </label>
+                      <span className="text-gray-900 font-medium">{habits[key]}%</span>
+                    </div>
+                    <input
+                      id={`habit-${key}`}
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={habits[key]}
+                      onChange={(e) => handleHabitChange(key, Number(e.target.value))}
+                      aria-label={`${label}消費比例`}
+                      className="w-full accent-blue-600"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            aria-label={loading ? "分析中" : "取得推薦"}
-            className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {loading ? "分析中..." : "取得推薦"}
-          </button>
-        </form>
+          {/* Step 3: Preferences */}
+          {step === 3 && (
+            <div className="bg-white rounded-lg shadow p-5">
+              <h2 className="font-semibold text-gray-700 mb-3">偏好條件</h2>
+              <p className="text-xs text-gray-400 mb-4">點擊標籤選擇或取消偏好</p>
+              <div className="flex flex-wrap gap-2" role="group" aria-label="偏好條件選擇">
+                {PREFERENCES.map(({ value, label }) => {
+                  const isSelected = preferences.includes(value);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => togglePreference(value)}
+                      aria-pressed={isSelected}
+                      className={`px-3.5 py-2 rounded-full text-sm font-medium transition-colors ${
+                        isSelected
+                          ? "bg-blue-600 text-white shadow-sm"
+                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      }`}
+                    >
+                      {isSelected && <span className="mr-1">✓</span>}
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              {preferences.length > 0 && (
+                <p className="text-xs text-gray-400 mt-3">
+                  已選擇 {preferences.length} 項偏好
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Navigation Buttons */}
+          <div className="flex gap-3">
+            {step > 1 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s - 1)}
+                className="flex-1 py-2.5 rounded-lg font-medium border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                上一步
+              </button>
+            )}
+            {step < 3 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s + 1)}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors"
+              >
+                下一步
+              </button>
+            )}
+            {step === 3 && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={loading}
+                aria-label={loading ? "分析中" : "取得推薦"}
+                className="flex-1 bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? "分析中..." : "取得推薦"}
+              </button>
+            )}
+          </div>
+        </div>
 
         {/* Results */}
         <section className="flex-1" aria-label="推薦結果">
@@ -213,7 +361,7 @@ export default function RecommendPage() {
 
           {results === null && !error && (
             <div className="text-center py-16 text-gray-400">
-              填寫左方條件後按下「取得推薦」
+              完成三個步驟後按下「取得推薦」
             </div>
           )}
 
@@ -234,10 +382,10 @@ export default function RecommendPage() {
                   className="bg-white rounded-lg shadow p-5"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span
-                          className="bg-blue-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center"
+                          className="bg-blue-600 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                           aria-label={`排名第 ${rec.rank} 名`}
                         >
                           {rec.rank}
@@ -254,35 +402,42 @@ export default function RecommendPage() {
                       </p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-sm text-gray-500">綜合評分</div>
-                      <div className="text-xl font-bold text-blue-600">
-                        {rec.score}
+                      <div className="text-2xl font-bold text-green-600">
+                        ${rec.estimated_monthly_reward.toLocaleString()}
                       </div>
+                      <div className="text-xs text-gray-400">預估月回饋</div>
                     </div>
                   </div>
 
-                  <div className="mt-3 ml-8">
-                    <div className="text-sm">
-                      <span className="text-gray-500">預估每月回饋：</span>
-                      <span className="font-semibold text-green-700">
-                        ${rec.estimated_monthly_reward.toLocaleString()}
+                  {/* Score bar */}
+                  <div className="mt-4 ml-8">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500 w-16 flex-shrink-0">綜合評分</span>
+                      <div className="flex-1 bg-gray-100 rounded-full h-3 overflow-hidden">
+                        <div
+                          className="h-full bg-blue-500 rounded-full transition-all"
+                          style={{ width: `${rec.score}%` }}
+                        />
+                      </div>
+                      <span className="text-sm font-semibold text-blue-600 w-10 text-right">
+                        {rec.score}
                       </span>
                     </div>
-
-                    {rec.reasons.length > 0 && (
-                      <ul className="mt-2 space-y-1" aria-label="推薦理由">
-                        {rec.reasons.map((reason, i) => (
-                          <li
-                            key={i}
-                            className="text-sm text-gray-600 flex items-start gap-1"
-                          >
-                            <span className="text-blue-400 mt-0.5">-</span>
-                            {reason}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
                   </div>
+
+                  {rec.reasons.length > 0 && (
+                    <ul className="mt-3 ml-8 space-y-1" aria-label="推薦理由">
+                      {rec.reasons.map((reason, i) => (
+                        <li
+                          key={i}
+                          className="text-sm text-gray-600 flex items-start gap-2"
+                        >
+                          <span className="text-blue-500 mt-0.5 flex-shrink-0">●</span>
+                          {reason}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>
