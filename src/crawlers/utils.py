@@ -341,6 +341,9 @@ def extract_promotions_from_text(
                 "title": title,
                 "description": title,
                 "reward_rate": reward_rate,
+                "reward_type": detect_reward_type(title),
+                "reward_limit": extract_reward_limit(title),
+                "min_spend": extract_min_spend(title),
             })
 
             if len(promotions) >= max_count:
@@ -368,6 +371,12 @@ def detect_promotion_category(text: str) -> str:
         "travel": ["旅遊", "哩程", "里程", "飛行", "航空", "機場", "訂房", "飯店"],
         "mobile_pay": ["行動支付", "Apple Pay", "Google Pay", "Samsung Pay", "LINE Pay"],
         "supermarket": ["超市", "全聯", "家樂福", "大潤發", "costco"],
+        "streaming": [
+            "串流", "Netflix", "Spotify", "Disney+", "YouTube Premium",
+            "KKBOX", "Apple TV", "HBO",
+        ],
+        "new_cardholder": ["新戶", "首刷", "新卡友", "新申辦"],
+        "installment": ["分期", "零利率", "0利率"],
     }
 
     for category, keywords in category_keywords.items():
@@ -375,3 +384,150 @@ def detect_promotion_category(text: str) -> str:
             return category
 
     return "others"
+
+
+def detect_reward_type(text: str) -> str:
+    """根據文字判斷回饋類型
+
+    Args:
+        text: 包含回饋描述的文字
+
+    Returns:
+        "miles", "cashback", 或 "points"
+    """
+    if not text:
+        return "points"
+
+    if any(kw in text for kw in ["哩程", "里程", "飛行", "航空", "哩"]):
+        return "miles"
+    if any(kw in text for kw in ["現金回饋", "刷卡金", "現金", "cashback"]):
+        return "cashback"
+    return "points"
+
+
+def extract_reward_limit(text: str) -> Optional[int]:
+    """從文字中擷取回饋上限金額
+
+    Args:
+        text: 包含回饋上限資訊的文字
+
+    Returns:
+        回饋上限金額（整數），若無則返回 None
+    """
+    if not text:
+        return None
+
+    patterns = [
+        r"(?:每月|每期)?回饋上限[：:\s]*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元?",
+        r"上限\s*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元?",
+        r"(?:每月|每期)?(?:最高|至多)(?:回饋)?\s*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元",
+        r"回饋(?:金額)?(?:最高|至多)\s*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元?",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                return int(match.group(1).replace(",", ""))
+            except ValueError:
+                pass
+
+    return None
+
+
+def extract_min_spend(text: str) -> Optional[int]:
+    """從文字中擷取最低消費門檻
+
+    Args:
+        text: 包含消費門檻資訊的文字
+
+    Returns:
+        最低消費金額（整數），若無則返回 None
+    """
+    if not text:
+        return None
+
+    patterns = [
+        r"(?:消費|刷卡|單筆)滿\s*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元?",
+        r"滿\s*(?:新臺幣|NT\$?)?\s*([\d,]+)\s*元?\s*(?:以上|即享|即可|回饋)",
+        r"(?:單筆|每筆|當期)滿\s*(?:新臺幣|NT\$?)?\s*([\d,]+)",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+        if match:
+            try:
+                return int(match.group(1).replace(",", ""))
+            except ValueError:
+                pass
+
+    return None
+
+
+def extract_common_features(text: str) -> dict:
+    """從頁面文字中擷取通用卡片 feature
+
+    集中化所有爬蟲重複的 feature 偵測邏輯，統一 key 名稱。
+
+    Args:
+        text: 頁面文字內容
+
+    Returns:
+        feature dict
+    """
+    if not text:
+        return {}
+
+    features = {}
+
+    # reward_type
+    features["reward_type"] = detect_reward_type(text)
+
+    # 行動支付
+    if any(kw in text for kw in ["行動支付", "Apple Pay", "Google Pay", "Samsung Pay"]):
+        features["mobile_pay"] = True
+
+    # 網購
+    if "網購" in text or "線上消費" in text:
+        features["online_shopping"] = True
+
+    # 海外消費
+    if "國外" in text or "海外" in text:
+        features["overseas"] = True
+
+    # 機場接送
+    if "機場接送" in text:
+        features["airport_transfer"] = True
+
+    # 貴賓室（統一使用 lounge_access）
+    if "貴賓室" in text:
+        features["lounge_access"] = True
+
+    # 旅遊保險
+    if "旅遊" in text and "保險" in text:
+        features["travel_insurance"] = True
+
+    # 哩程
+    if "哩程" in text or "里程" in text:
+        features["mileage"] = True
+
+    # 餐飲
+    if any(kw in text for kw in ["餐飲", "美食", "餐廳", "用餐"]):
+        features["dining"] = True
+
+    # 串流平台
+    if any(kw in text for kw in [
+        "串流", "Netflix", "Spotify", "Disney+",
+        "YouTube Premium", "KKBOX", "Apple TV", "HBO",
+    ]):
+        features["streaming"] = True
+
+    # 分期
+    if any(kw in text for kw in ["分期", "零利率", "0利率"]):
+        features["installment"] = True
+
+    # 新戶/首刷
+    if any(kw in text for kw in ["新戶", "首刷", "新卡友", "新申辦"]):
+        features["new_cardholder_bonus"] = True
+
+    return features

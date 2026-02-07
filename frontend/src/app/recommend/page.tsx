@@ -10,6 +10,10 @@ const CATEGORIES: { key: keyof SpendingHabits; label: string }[] = [
   { key: "online_shopping", label: "網購" },
   { key: "transport", label: "交通" },
   { key: "overseas", label: "海外" },
+  { key: "convenience_store", label: "超商" },
+  { key: "department_store", label: "百貨" },
+  { key: "supermarket", label: "超市" },
+  { key: "streaming", label: "串流平台" },
   { key: "others", label: "其他" },
 ];
 
@@ -19,12 +23,23 @@ const PREFERENCES: { value: string; label: string }[] = [
   { value: "cashback", label: "現金回饋" },
   { value: "miles", label: "哩程累積" },
   { value: "travel", label: "旅遊相關" },
+  { value: "mobile_pay", label: "行動支付加碼" },
+  { value: "dining", label: "餐飲優惠" },
+  { value: "online_shopping", label: "網購優惠" },
+  { value: "new_cardholder", label: "新戶/首刷優惠" },
+  { value: "installment", label: "分期零利率" },
+  { value: "streaming", label: "串流平台優惠" },
+  { value: "travel_insurance", label: "旅遊保險" },
 ];
 
 function normalizeHabits(raw: SpendingHabits): SpendingHabits {
   const total = Object.values(raw).reduce((sum, v) => sum + v, 0);
   if (total === 0) {
-    return { dining: 0.2, online_shopping: 0.2, transport: 0.2, overseas: 0.2, others: 0.2 };
+    return {
+      dining: 0.15, online_shopping: 0.15, transport: 0.15, overseas: 0.1,
+      convenience_store: 0.1, department_store: 0.1, supermarket: 0.1,
+      streaming: 0.05, others: 0.1,
+    };
   }
   const result: SpendingHabits = { ...raw };
   for (const key of Object.keys(result) as (keyof SpendingHabits)[]) {
@@ -36,11 +51,15 @@ function normalizeHabits(raw: SpendingHabits): SpendingHabits {
 export default function RecommendPage() {
   const [monthlyAmount, setMonthlyAmount] = useState<number>(30000);
   const [habits, setHabits] = useState<SpendingHabits>({
-    dining: 30,
-    online_shopping: 25,
-    transport: 20,
+    dining: 20,
+    online_shopping: 15,
+    transport: 15,
     overseas: 10,
-    others: 15,
+    convenience_store: 10,
+    department_store: 10,
+    supermarket: 10,
+    streaming: 5,
+    others: 5,
   });
   const [preferences, setPreferences] = useState<string[]>([]);
   const [results, setResults] = useState<CardRecommendation[] | null>(null);

@@ -1,4 +1,3 @@
-import json
 import re
 import time
 from typing import List, Optional, Tuple
@@ -12,10 +11,10 @@ from src.crawlers.base import BaseCrawler
 from src.crawlers.utils import (
     clean_text,
     detect_promotion_category,
+    extract_common_features,
     extract_promotions_from_text,
 )
 from src.models import CreditCard, Promotion
-
 
 # 玉山銀行信用卡介紹頁
 ESUN_CARDS_URL = "https://www.esunbank.com/zh-tw/personal/credit-card/intro"
@@ -313,35 +312,9 @@ class EsunCrawler(BaseCrawler):
 
     def _extract_features(self, text: str, card_name: str) -> dict:
         """擷取卡片特色"""
-        features = {}
+        features = extract_common_features(text)
 
-        # 行動支付
-        if any(kw in text for kw in ["行動支付", "Apple Pay", "Google Pay", "Samsung Pay"]):
-            features["mobile_pay"] = True
-
-        # 網購回饋
-        if "網購" in text or "線上消費" in text:
-            features["online_shopping"] = True
-
-        # 國外消費
-        if "國外" in text or "海外" in text:
-            features["overseas"] = True
-
-        # 機場接送/貴賓室
-        if "機場接送" in text:
-            features["airport_transfer"] = True
-        if "貴賓室" in text:
-            features["lounge"] = True
-
-        # 旅遊保險
-        if "旅遊" in text and "保險" in text:
-            features["travel_insurance"] = True
-
-        # 哩程
-        if "哩程" in text or "里程" in text:
-            features["mileage"] = True
-
-        # 聯名卡特色
+        # E.SUN-specific
         if "星宇" in card_name:
             features["rewards"] = "星宇哩程"
         elif "Pi" in card_name:
@@ -353,7 +326,6 @@ class EsunCrawler(BaseCrawler):
 
     def _extract_promotions(self, text: str, url: str) -> List[dict]:
         """擷取優惠活動"""
-        # 使用共用工具擷取並清理優惠
         text = clean_text(text)
         extracted = extract_promotions_from_text(text, max_count=3)
 
@@ -365,6 +337,9 @@ class EsunCrawler(BaseCrawler):
                 "source_url": url,
                 "category": detect_promotion_category(promo_info["title"]),
                 "reward_rate": promo_info.get("reward_rate"),
+                "reward_type": promo_info.get("reward_type"),
+                "reward_limit": promo_info.get("reward_limit"),
+                "min_spend": promo_info.get("min_spend"),
             })
 
         return promotions

@@ -11,10 +11,10 @@ from src.crawlers.base import BaseCrawler
 from src.crawlers.utils import (
     clean_text,
     detect_promotion_category,
+    detect_reward_type,
     extract_promotions_from_text,
 )
 from src.models import CreditCard, Promotion
-
 
 # CTBC 信用卡 JSON API
 CTBC_CARDS_API = "https://www.ctbcbank.com/web/content/twrbo/setting/creditcards.cardlist.json"
@@ -132,12 +132,17 @@ class CtbcCrawler(BaseCrawler):
         card_type = self._parse_card_level(card_levels)
 
         # 解析特色
+        reward_types_raw = card_json.get("rewardType", [])
         features = {
             "card_types": card_json.get("cardType", []),
-            "reward_types": card_json.get("rewardType", []),
+            "reward_types": reward_types_raw,
             "extra_functions": card_json.get("extraFunction", []),
             "highlights": card_json.get("cardFeature", []),
         }
+
+        # 從 rewardType 推導 reward_type
+        reward_types_text = " ".join(reward_types_raw)
+        features["reward_type"] = detect_reward_type(reward_types_text + " " + name)
 
         # 解析回饋率
         reward_rate = self._extract_reward_rate_from_features(features.get("highlights", []))
@@ -275,6 +280,9 @@ class CtbcCrawler(BaseCrawler):
                         "source_url": card.apply_url,
                         "category": detect_promotion_category(promo_info["title"]),
                         "reward_rate": promo_info.get("reward_rate"),
+                        "reward_type": promo_info.get("reward_type"),
+                        "reward_limit": promo_info.get("reward_limit"),
+                        "min_spend": promo_info.get("min_spend"),
                     }
                     promo = self.save_promotion(card, promo_data)
                     if promo:

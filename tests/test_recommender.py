@@ -563,6 +563,72 @@ def test_annual_fee_roi_with_promotion_and_limit():
     assert score == 21.67
 
 
+def test_feature_score_new_cardholder():
+    """new_cardholder preference matches cards with new_cardholder_bonus feature."""
+    card_yes = CreditCard(name="New Card", features={"new_cardholder_bonus": True})
+    card_no = CreditCard(name="Old Card", features={})
+    assert calculate_feature_score(card_yes, ["new_cardholder"]) == 100.0
+    assert calculate_feature_score(card_no, ["new_cardholder"]) == 0.0
+
+
+def test_feature_score_installment():
+    """installment preference matches cards with installment feature."""
+    card_yes = CreditCard(name="Installment Card", features={"installment": True})
+    card_no = CreditCard(name="No Installment", features={})
+    assert calculate_feature_score(card_yes, ["installment"]) == 100.0
+    assert calculate_feature_score(card_no, ["installment"]) == 0.0
+
+
+def test_feature_score_streaming():
+    """streaming preference matches cards with streaming feature."""
+    card_yes = CreditCard(name="Stream Card", features={"streaming": True})
+    card_no = CreditCard(name="No Stream", features={})
+    assert calculate_feature_score(card_yes, ["streaming"]) == 100.0
+    assert calculate_feature_score(card_no, ["streaming"]) == 0.0
+
+
+def test_feature_score_travel_insurance():
+    """travel_insurance preference matches cards with travel_insurance feature."""
+    card_yes = CreditCard(name="Travel Card", features={"travel_insurance": True})
+    card_no = CreditCard(name="No Travel", features={})
+    assert calculate_feature_score(card_yes, ["travel_insurance"]) == 100.0
+    assert calculate_feature_score(card_no, ["travel_insurance"]) == 0.0
+
+
+def test_filter_keeps_waivable_annual_fee(db_session):
+    """年費可減免的卡不應被 no_annual_fee 過濾掉。"""
+    bank = db_session.query(Bank).first()
+    card_waiver = CreditCard(
+        bank_id=bank.id,
+        name="減免卡",
+        annual_fee=2000,
+        annual_fee_waiver="消費滿額免年費",
+        base_reward_rate=2.0,
+    )
+    db_session.add(card_waiver)
+    db_session.commit()
+
+    engine = RecommendationEngine(db_session)
+    request = RecommendRequest(
+        spending_habits={"dining": 1.0},
+        monthly_amount=30000,
+        preferences=["no_annual_fee"],
+    )
+    results = engine.recommend(request)
+    card_names = [r.card.name for r in results]
+    assert "減免卡" in card_names
+
+
+def test_feature_score_lounge_access_backward_compat():
+    """lounge_access preference should match both lounge_access and lounge keys."""
+    card_new = CreditCard(name="New Key", features={"lounge_access": True})
+    card_old = CreditCard(name="Old Key", features={"lounge": True})
+    card_none = CreditCard(name="No Lounge", features={})
+    assert calculate_feature_score(card_new, ["lounge_access"]) == 100.0
+    assert calculate_feature_score(card_old, ["lounge_access"]) == 100.0
+    assert calculate_feature_score(card_none, ["lounge_access"]) == 0.0
+
+
 def test_engine_estimate_reward_respects_limit(db_session):
     """engine 層的估算也應反映回饋上限。"""
     bank = db_session.query(Bank).first()

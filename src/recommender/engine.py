@@ -81,10 +81,11 @@ class RecommendationEngine:
         filtered = []
 
         for card in cards:
-            # 如果要求免年費，過濾掉有年費的卡
+            # 如果要求免年費，過濾掉有年費且無減免的卡
             if "no_annual_fee" in request.preferences:
                 if card.annual_fee and card.annual_fee > 0:
-                    continue
+                    if not card.annual_fee_waiver:
+                        continue
             filtered.append(card)
 
         return filtered
@@ -127,6 +128,9 @@ class RecommendationEngine:
             "insurance": "保險",
             "education": "教育",
             "medical": "醫療",
+            "streaming": "串流",
+            "new_cardholder": "新戶首刷",
+            "installment": "分期",
             "others": "一般",
         }
 
@@ -148,6 +152,8 @@ class RecommendationEngine:
         # 年費相關
         if card.annual_fee == 0 or card.annual_fee is None:
             reasons.append("免年費")
+        elif card.annual_fee_waiver:
+            reasons.append(f"年費減免：{card.annual_fee_waiver}")
         elif scores.get("annual_fee_roi_score", 0) > 60:
             annual_fee = card.annual_fee or 0
             if annual_fee > 0:
@@ -172,6 +178,13 @@ class RecommendationEngine:
         )
         if has_limit:
             reasons.append("注意：部分回饋有每月上限")
+
+        # 新戶/首刷優惠
+        new_cardholder_promos = [
+            p for p in promotions if p.category == "new_cardholder"
+        ]
+        if new_cardholder_promos and len(reasons) < 4:
+            reasons.append("有新戶/首刷優惠活動")
 
         # 優惠數量
         if promotions and len(reasons) < 4:

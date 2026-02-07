@@ -25,12 +25,12 @@ def test_parse_card_level():
 
 
 def test_detect_category():
-    crawler = CtbcCrawler.__new__(CtbcCrawler)
+    from src.crawlers.utils import detect_promotion_category
 
-    assert crawler._detect_category("餐飲優惠") == "dining"
-    assert crawler._detect_category("網購回饋 蝦皮滿額折") == "online_shopping"
-    assert crawler._detect_category("加油優惠") == "transport"
-    assert crawler._detect_category("一般優惠") == "others"
+    assert detect_promotion_category("餐飲優惠") == "dining"
+    assert detect_promotion_category("網購回饋 蝦皮滿額折") == "online_shopping"
+    assert detect_promotion_category("加油優惠") == "transport"
+    assert detect_promotion_category("一般優惠") == "others"
 
 
 def test_parse_card_json():

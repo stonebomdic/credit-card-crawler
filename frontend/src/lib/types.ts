@@ -87,7 +87,12 @@ export interface SpendingHabits {
   online_shopping: number;
   transport: number;
   overseas: number;
+  convenience_store: number;
+  department_store: number;
+  supermarket: number;
+  streaming: number;
   others: number;
+  [key: string]: number;
 }
 
 export interface RecommendRequest {

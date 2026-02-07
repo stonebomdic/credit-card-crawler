@@ -11,6 +11,7 @@ from src.crawlers.base import BaseCrawler
 from src.crawlers.utils import (
     clean_text,
     detect_promotion_category,
+    extract_common_features,
     extract_promotions_from_text,
 )
 from src.models import CreditCard, Promotion
@@ -292,27 +293,7 @@ class UbotCrawler(BaseCrawler):
 
     def _extract_features(self, text: str, card_name: str) -> dict:
         """擷取卡片特色"""
-        features = {}
-
-        if any(kw in text for kw in ["行動支付", "Apple Pay", "Google Pay", "Samsung Pay"]):
-            features["mobile_pay"] = True
-
-        if "網購" in text or "線上消費" in text:
-            features["online_shopping"] = True
-
-        if "國外" in text or "海外" in text:
-            features["overseas"] = True
-
-        if "機場接送" in text:
-            features["airport_transfer"] = True
-        if "貴賓室" in text:
-            features["lounge"] = True
-
-        if "旅遊" in text and "保險" in text:
-            features["travel_insurance"] = True
-
-        if "哩程" in text or "里程" in text:
-            features["mileage"] = True
+        features = extract_common_features(text)
 
         # UBot-specific
         if "賴點卡" in card_name:
@@ -334,6 +315,9 @@ class UbotCrawler(BaseCrawler):
                 "source_url": url,
                 "category": detect_promotion_category(promo_info["title"]),
                 "reward_rate": promo_info.get("reward_rate"),
+                "reward_type": promo_info.get("reward_type"),
+                "reward_limit": promo_info.get("reward_limit"),
+                "min_spend": promo_info.get("min_spend"),
             })
 
         return promotions

@@ -79,7 +79,9 @@ def calculate_feature_score(
     preference_mapping = {
         "no_annual_fee": lambda c: c.annual_fee == 0 or c.annual_fee is None,
         "airport_pickup": lambda c: features.get("airport_pickup", False),
-        "lounge_access": lambda c: features.get("lounge_access", False),
+        "lounge_access": lambda c: (
+            features.get("lounge_access") or features.get("lounge", False)
+        ),
         "cashback": lambda c: features.get("reward_type") == "cashback",
         "miles": lambda c: features.get("reward_type") == "miles",
         "high_reward": lambda c: (c.base_reward_rate or 0) >= 2.0,
@@ -91,6 +93,10 @@ def calculate_feature_score(
         "dining": lambda c: features.get("dining", False),
         "mobile_pay": lambda c: features.get("mobile_pay", False),
         "online_shopping": lambda c: features.get("online_shopping", False),
+        "new_cardholder": lambda c: features.get("new_cardholder_bonus", False),
+        "installment": lambda c: features.get("installment", False),
+        "streaming": lambda c: features.get("streaming", False),
+        "travel_insurance": lambda c: features.get("travel_insurance", False),
     }
 
     for pref in preferences:

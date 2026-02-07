@@ -41,7 +41,8 @@ def test_extract_reward_rate():
 
 
 def test_detect_category():
-    crawler = FubonCrawler.__new__(FubonCrawler)
-    assert crawler._detect_category("餐飲優惠 8 折") == "dining"
-    assert crawler._detect_category("網購滿千折百") == "online_shopping"
-    assert crawler._detect_category("一般消費") == "others"
+    from src.crawlers.utils import detect_promotion_category
+
+    assert detect_promotion_category("餐飲優惠 8 折") == "dining"
+    assert detect_promotion_category("網購滿千折百") == "online_shopping"
+    assert detect_promotion_category("一般消費") == "others"
