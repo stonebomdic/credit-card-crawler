@@ -9,31 +9,43 @@ export const metadata: Metadata = {
 
 function Navbar() {
   return (
-    <nav className="fixed top-4 left-4 right-4 z-50 bg-white/90 backdrop-blur-lg border border-[#99F6E4] rounded-2xl shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4">
+    <nav className="fixed top-5 left-5 right-5 z-50 glass border border-white/30 rounded-2xl shadow-[0_8px_32px_rgba(15,118,110,0.08)]">
+      <div className="max-w-7xl mx-auto px-6 py-3.5">
         <div className="flex items-center justify-between">
+          {/* Logo */}
           <Link
             href="/"
-            className="text-xl font-bold text-[#0F766E] hover:text-[#0D9488] transition-colors duration-200"
+            className="flex items-center gap-2.5 group"
           >
-            信用卡推薦
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#0F766E] to-[#14B8A6] flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow duration-300">
+              <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="1" y="4" width="22" height="16" rx="3" />
+                <line x1="1" y1="10" x2="23" y2="10" />
+              </svg>
+            </div>
+            <span className="text-lg font-bold tracking-tight text-[#134E4A] group-hover:text-[#0F766E] transition-colors duration-200">
+              CardPick
+            </span>
           </Link>
-          <div className="flex items-center gap-8">
+
+          {/* Nav links */}
+          <div className="flex items-center gap-1.5">
             <Link
               href="/"
-              className="text-[#475569] hover:text-[#0F766E] transition-colors duration-200 text-sm font-medium"
+              className="px-4 py-2 text-[#475569] hover:text-[#0F766E] hover:bg-[#F0FDFA] rounded-lg transition-all duration-200 text-sm font-medium"
             >
               首頁
             </Link>
             <Link
               href="/cards"
-              className="text-[#475569] hover:text-[#0F766E] transition-colors duration-200 text-sm font-medium"
+              className="px-4 py-2 text-[#475569] hover:text-[#0F766E] hover:bg-[#F0FDFA] rounded-lg transition-all duration-200 text-sm font-medium"
             >
               信用卡
             </Link>
+            <div className="w-px h-5 bg-[#E2E8F0] mx-1.5" />
             <Link
               href="/recommend"
-              className="px-4 py-2 bg-[#0369A1] hover:bg-[#0284C7] text-white text-sm font-medium rounded-lg transition-colors duration-200 cursor-pointer"
+              className="px-5 py-2.5 bg-gradient-to-r from-[#0F766E] to-[#0D9488] hover:from-[#0D9488] hover:to-[#14B8A6] text-white text-sm font-semibold rounded-xl transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-[#0F766E]/20 cursor-pointer"
             >
               開始推薦
             </Link>
@@ -51,21 +63,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-TW">
-      <body className="bg-[#F0FDFA] min-h-screen">
+      <body className="bg-[#F0FDFA] min-h-screen grain">
         <Navbar />
         <main className="pt-24 pb-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {children}
           </div>
         </main>
-        <footer className="bg-white border-t border-[#E2E8F0]">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <footer className="relative border-t border-[#99F6E4]/40">
+          <div className="absolute inset-0 bg-gradient-to-t from-white/80 to-[#F0FDFA]/50" />
+          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <div className="text-[#134E4A] font-semibold">
-                台灣信用卡推薦平台
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#0F766E] to-[#14B8A6] flex items-center justify-center">
+                  <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="3" />
+                    <line x1="1" y1="10" x2="23" y2="10" />
+                  </svg>
+                </div>
+                <span className="text-[#134E4A] font-semibold tracking-tight">CardPick</span>
               </div>
               <div className="text-[#64748B] text-sm">
-                幫助您找到最適合的信用卡
+                台灣信用卡智能推薦平台
               </div>
             </div>
           </div>
