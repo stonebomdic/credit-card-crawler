@@ -63,15 +63,25 @@ export default function CardDetailPage() {
         <div className="p-6 lg:p-8">
           <div className="flex flex-col lg:flex-row gap-8">
             {/* Card image */}
-            {card.image_url && (
-              <div className="flex-shrink-0 flex justify-center">
+            <div className="flex-shrink-0 flex justify-center">
+              {card.image_url ? (
                 <img
                   src={card.image_url}
                   alt={card.name}
                   className="h-48 lg:h-56 object-contain rounded"
+                  onError={(e) => {
+                    const target = e.currentTarget;
+                    target.style.display = "none";
+                    target.parentElement!.innerHTML =
+                      `<div class="h-48 lg:h-56 w-64 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded text-gray-400 text-base px-4 text-center">${card.name}</div>`;
+                  }}
                 />
-              </div>
-            )}
+              ) : (
+                <div className="h-48 lg:h-56 w-64 flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded text-gray-400 text-base px-4 text-center">
+                  {card.name}
+                </div>
+              )}
+            </div>
 
             {/* Card info */}
             <div className="flex-1 space-y-4">

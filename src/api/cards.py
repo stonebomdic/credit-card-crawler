@@ -44,6 +44,12 @@ async def list_cards(
 ):
     query = select(CreditCard).options(selectinload(CreditCard.bank))
 
+    # 排除已停發卡片與非信用卡
+    query = query.where(
+        ~CreditCard.name.contains("停發"),
+        ~CreditCard.name.contains("簽帳金融卡"),
+    )
+
     if bank_id:
         query = query.where(CreditCard.bank_id == bank_id)
     if card_type:

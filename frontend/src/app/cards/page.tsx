@@ -138,15 +138,25 @@ export default function CardsPage() {
                       className="block bg-white rounded-lg shadow hover:shadow-md transition-shadow"
                     >
                       <div className="p-4">
-                        {card.image_url && (
-                          <div className="mb-3 flex justify-center">
+                        <div className="mb-3 flex justify-center items-center h-32">
+                          {card.image_url ? (
                             <img
                               src={card.image_url}
                               alt={card.name}
                               className="h-32 object-contain rounded"
+                              onError={(e) => {
+                                const target = e.currentTarget;
+                                target.style.display = "none";
+                                target.parentElement!.innerHTML =
+                                  `<div class="h-32 w-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded text-gray-400 text-sm px-4 text-center">${card.name}</div>`;
+                              }}
                             />
-                          </div>
-                        )}
+                          ) : (
+                            <div className="h-32 w-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 rounded text-gray-400 text-sm px-4 text-center">
+                              {card.name}
+                            </div>
+                          )}
+                        </div>
                         <h3 className="font-semibold text-gray-900 mb-1 line-clamp-2">
                           {card.name}
                         </h3>
