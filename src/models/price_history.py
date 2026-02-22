@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.db.database import Base
@@ -23,6 +23,7 @@ class PriceHistory(Base):
     snapshot_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )
+    source: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
 
     product: Mapped["TrackedProduct"] = relationship(back_populates="price_history")
 
