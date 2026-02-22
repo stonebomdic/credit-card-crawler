@@ -91,6 +91,78 @@ docker-compose up --build
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
 ```
 
+## GCP 免費方案部署
+
+使用 GCP e2-micro（永久免費），Nginx 服務靜態前端，Docker 跑後端。
+
+### 規格
+- VM：e2-micro（us-central1），1 vCPU / 1 GB RAM
+- 磁碟：30 GB standard persistent disk
+- Swap：2 GB（防止 Playwright OOM）
+- 前端：Next.js static export，由 Nginx 服務
+- 後端：Docker 單容器（FastAPI + APScheduler + SQLite）
+
+### 步驟
+
+**1. GCP Console 設定**
+
+在 GCP Console 建立 VM：
+- Machine type：e2-micro
+- Region：us-central1（永久免費區域）
+- Boot disk：30 GB Standard persistent disk，Debian 12
+- 防火牆：勾選 Allow HTTP traffic（port 80）
+- 建立靜態外部 IP
+
+**2. VM 初始化（首次，SSH 進 VM 後執行）**
+
+```bash
+git clone https://github.com/YOUR_USERNAME/deal-radar.git ~/deal-radar
+cd ~/deal-radar
+cp .env.example .env        # 填入 Telegram/Discord token 等
+nano .env
+bash scripts/gcp-vm-setup.sh
+# 重新登入 VM 以套用 docker 群組
+```
+
+**3. 建置靜態前端（本機執行）**
+
+```bash
+# 確保後端在 localhost:8000 運行
+python3 -m src.cli serve &
+
+# 建置靜態前端（需 Node.js 20+）
+API_URL=http://localhost:8000 npm run build --prefix frontend
+
+# 上傳靜態檔至 VM
+scp -r frontend/out/* USER@VM_EXTERNAL_IP:/var/www/deal-radar/
+```
+
+**4. 部署後端（VM 上執行）**
+
+```bash
+cd ~/deal-radar
+bash scripts/gcp-deploy.sh
+```
+
+**5. 確認服務正常**
+
+```bash
+curl http://VM_EXTERNAL_IP/health        # {"status":"ok"}
+curl http://VM_EXTERNAL_IP/api/flash-deals | head -c 100
+# 用瀏覽器開啟 http://VM_EXTERNAL_IP
+```
+
+**6. 更新部署**
+
+```bash
+# 本機：重建前端並上傳
+API_URL=http://localhost:8000 npm run build --prefix frontend
+scp -r frontend/out/* USER@VM_EXTERNAL_IP:/var/www/deal-radar/
+
+# VM 上：更新後端
+cd ~/deal-radar && bash scripts/gcp-deploy.sh
+```
+
 ## CLI 指令
 
 ```bash
