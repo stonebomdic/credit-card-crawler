@@ -7,7 +7,8 @@ from src.scheduler.jobs import (
     check_new_promotions,
     cleanup_expired_promotions,
     run_daily_promotion_crawl,
-    run_flash_deals_refresh,
+    run_momo_flash_deals_refresh,
+    run_pchome_flash_deals_refresh,
     run_price_tracking,
     run_weekly_card_crawl,
 )
@@ -65,13 +66,22 @@ def create_scheduler() -> BackgroundScheduler:
         name="Price Tracking",
     )
 
-    # 每 1 小時更新限時瘋搶
+    # PChome 每 1 小時（httpx 輕量）
     scheduler.add_job(
-        run_flash_deals_refresh,
+        run_pchome_flash_deals_refresh,
         "interval",
         hours=1,
-        id="flash_deals_refresh",
-        name="Flash Deals Refresh",
+        id="pchome_flash_deals_refresh",
+        name="PChome Flash Deals Refresh",
+    )
+
+    # Momo 每 3 小時（Playwright 較重）
+    scheduler.add_job(
+        run_momo_flash_deals_refresh,
+        "interval",
+        hours=3,
+        id="momo_flash_deals_refresh",
+        name="Momo Flash Deals Refresh",
     )
 
     logger.info("Scheduler configured with jobs")
