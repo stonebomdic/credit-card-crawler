@@ -1,5 +1,6 @@
 import pytest
-from src.trackers.base import BaseTracker, ProductResult, PriceSnapshot
+
+from src.trackers.base import BaseTracker, PriceSnapshot, ProductResult
 
 
 def test_product_result_dataclass():

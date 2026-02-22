@@ -1,8 +1,10 @@
-import pytest
 from unittest.mock import MagicMock
-from src.recommender.scoring import calculate_shopping_reward
+
+import pytest
+
 from src.models.card import CreditCard
 from src.models.promotion import Promotion
+from src.recommender.scoring import calculate_shopping_reward
 
 
 def _make_card(base_rate=1.0, annual_fee=0):

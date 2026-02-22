@@ -1,7 +1,6 @@
-import pytest
-from unittest.mock import patch, MagicMock
-from src.trackers.platforms.pchome import PChomeTracker
+from unittest.mock import MagicMock, patch
 
+from src.trackers.platforms.pchome import PChomeTracker
 
 MOCK_SEARCH_RESPONSE = {
     "prods": [

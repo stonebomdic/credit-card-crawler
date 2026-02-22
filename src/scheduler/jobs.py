@@ -163,10 +163,10 @@ def check_expiring_promotions():
 
 def run_price_tracking():
     """每 30 分鐘：爬取所有 active 商品最新價格並觸發通知"""
-    from src.models.tracked_product import TrackedProduct
     from src.models.notification_log import NotificationType
-    from src.trackers.utils import check_price_and_snapshot
+    from src.models.tracked_product import TrackedProduct
     from src.notifications.formatter import format_price_drop_alert
+    from src.trackers.utils import check_price_and_snapshot
 
     logger.info("Starting price tracking job")
     with get_sync_session() as session:

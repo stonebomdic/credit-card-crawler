@@ -3,9 +3,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from src.db.database import Base
-from src.models.tracked_product import TrackedProduct
-from src.models.price_history import PriceHistory
 from src.models.flash_deal import FlashDeal
+from src.models.price_history import PriceHistory
+from src.models.tracked_product import TrackedProduct
 
 
 @pytest.fixture

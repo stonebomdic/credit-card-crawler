@@ -1,6 +1,5 @@
+
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
-from src.trackers.platforms.momo import MomoTracker
 
 
 def test_parse_price_from_text():
