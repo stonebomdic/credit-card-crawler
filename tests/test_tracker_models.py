@@ -64,3 +64,26 @@ def test_create_flash_deal(db):
     db.commit()
     assert deal.id is not None
     assert deal.discount_rate == pytest.approx(0.765)
+
+
+def test_price_history_source_column(db):
+    product = TrackedProduct(
+        platform="pchome", product_id="DYAQD6",
+        name="Sony 耳機", url="https://24h.pchome.com.tw/prod/DYAQD6",
+    )
+    db.add(product)
+    db.flush()
+
+    snapshot = PriceHistory(
+        product_id=product.id, price=5990, in_stock=True, source="flash_deal"
+    )
+    db.add(snapshot)
+    db.commit()
+    assert snapshot.source == "flash_deal"
+
+    default_snapshot = PriceHistory(
+        product_id=product.id, price=6990, in_stock=True
+    )
+    db.add(default_snapshot)
+    db.commit()
+    assert default_snapshot.source is None
