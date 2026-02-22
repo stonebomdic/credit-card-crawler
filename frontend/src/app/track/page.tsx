@@ -40,7 +40,17 @@ export default function TrackPage() {
               >
                 <div>
                   <p className="font-medium">{result.name}</p>
-                  <p className="text-sm text-gray-500">{result.platform.toUpperCase()}</p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-sm text-gray-500">{result.platform.toUpperCase()}</p>
+                    <a
+                      href={result.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-500 hover:underline"
+                    >
+                      查看 ↗
+                    </a>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4">
                   <span className="text-lg font-bold text-green-600">
