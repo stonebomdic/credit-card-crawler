@@ -209,6 +209,32 @@ def run_flash_deals_refresh():
     logger.info("Flash deals refresh completed")
 
 
+def run_pchome_flash_deals_refresh():
+    """每 1 小時：更新 PChome 限時瘋搶"""
+    from src.trackers.utils import refresh_flash_deals
+
+    logger.info("Starting PChome flash deals refresh")
+    with get_sync_session() as session:
+        try:
+            count = refresh_flash_deals(session, "pchome")
+            logger.info(f"PChome flash deals refreshed: +{count} new")
+        except Exception as e:
+            logger.error(f"Error refreshing PChome flash deals: {e}")
+
+
+def run_momo_flash_deals_refresh():
+    """每 3 小時：更新 Momo 限時瘋搶（Playwright 較重，降低頻率）"""
+    from src.trackers.utils import refresh_flash_deals
+
+    logger.info("Starting Momo flash deals refresh")
+    with get_sync_session() as session:
+        try:
+            count = refresh_flash_deals(session, "momo")
+            logger.info(f"Momo flash deals refreshed: +{count} new")
+        except Exception as e:
+            logger.error(f"Error refreshing Momo flash deals: {e}")
+
+
 def _get_top_cards_for_shopping(session: Session, platform: str, amount: int, top_n: int = 3):
     """取得指定購物平台與金額的 Top N 信用卡（含回饋試算）"""
     from src.models.card import CreditCard
